@@ -1,0 +1,15 @@
+# 忽略 JetBrains IDE 配置
+.idea/
+
+# 其他常见忽略项（可按需增删）
+.DS_Store
+*.log
+node_modules/
+*.pyc
+__pycache__/
+*.class
+*.jar
+*.war
+*.iml
+*.ipr
+*.iws
