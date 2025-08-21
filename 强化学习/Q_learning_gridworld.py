@@ -1,6 +1,11 @@
 import numpy as np
 import random
 import time
+import matplotlib.pyplot as plt
+from matplotlib.patches import Rectangle, Circle
+
+# 启用matplotlib交互模式
+plt.ion()
 
 
 class GridWorld:
@@ -23,6 +28,12 @@ class GridWorld:
 
         # 当前位置
         self.current_pos = self.start
+
+        # 绘图相关变量初始化
+        self.fig = None
+        self.ax = None
+        self.agent_circle = None
+        self.agent_text = None
 
     def reset(self):
         """重置环境，回到起点"""
@@ -72,6 +83,95 @@ class GridWorld:
                     row.append(".")  # 空地
             print(" ".join(row))
         print()
+
+    def render_plot(self, title="Grid World", delay=0.3):
+        """整合所有绘图逻辑的单一函数，实现实时更新"""
+        # 第一次调用时初始化图形
+        if self.fig is None:
+
+            # 创建图形和坐标轴
+            self.fig, self.ax = plt.subplots(figsize=(6, 6))
+
+            # 绘制网格线
+            for i in range(self.size + 1):
+                self.ax.axhline(i, color="black", linewidth=1)
+                self.ax.axvline(i, color="black", linewidth=1)
+
+            # 绘制障碍物
+            for x, y in self.obstacles:
+                self.ax.add_patch(
+                    Rectangle(
+                        (y, self.size - 1 - x),
+                        1,
+                        1,
+                        facecolor="gray",
+                        edgecolor="black",
+                    )
+                )
+
+            # 绘制终点
+            end_x, end_y = self.end
+            self.ax.add_patch(
+                Rectangle(
+                    (end_y, self.size - 1 - end_x),
+                    1,
+                    1,
+                    facecolor="lightgreen",
+                    edgecolor="black",
+                )
+            )
+            self.ax.text(
+                end_y + 0.5,
+                self.size - 1 - end_x + 0.5,
+                "T",
+                ha="center",
+                va="center",
+                fontsize=12,
+                fontweight="bold",
+            )
+
+            # 创建智能体元素
+            self.agent_circle = Circle(
+                (0.5, self.size - 1 + 0.5), 0.4, facecolor="red", edgecolor="black"
+            )
+            self.ax.add_patch(self.agent_circle)
+
+            self.agent_text = self.ax.text(
+                0.5,
+                self.size - 1 + 0.5,
+                "A",
+                ha="center",
+                va="center",
+                fontsize=12,
+                fontweight="bold",
+                color="white",
+            )
+
+            # 设置坐标轴
+            self.ax.set_xlim(0, self.size)
+            self.ax.set_ylim(0, self.size)
+            self.ax.set_xticks(range(self.size))
+            self.ax.set_yticks(range(self.size))
+            self.ax.set_xticklabels(range(self.size))
+            self.ax.set_yticklabels(range(self.size - 1, -1, -1))
+            self.ax.set_aspect("equal")
+
+        # 更新智能体位置（每次调用都执行）
+        x, y = self.current_pos
+        plot_x = y + 0.5
+        plot_y = self.size - 1 - x + 0.5
+        self.agent_circle.set_center((plot_x, plot_y))
+        self.agent_text.set_position((plot_x, plot_y))
+
+        # 更新标题
+        self.ax.set_title(title)
+
+        # 刷新图形
+        self.fig.canvas.draw()
+        self.fig.canvas.flush_events()
+
+        # 延迟一段时间，方便观察
+        time.sleep(delay)
 
 
 class QLearningAgent:
@@ -163,8 +263,8 @@ def test_agent(env, agent, episodes=5):
         steps = 0
 
         print(f"\n测试 Episode {episode+1}:")
-        env.render()
-        time.sleep(0.5)
+        env.render_plot()  # env.render()
+        time.sleep(0.2)
 
         while not done and steps < 50:  # 限制最大步数防止无限循环
             # 选择最优动作（不探索）
@@ -178,8 +278,7 @@ def test_agent(env, agent, episodes=5):
             steps += 1
 
             # 显示当前状态
-            env.render()
-            time.sleep(0.5)
+            env.render_plot()  # env.render()
 
         print(
             f"测试 Episode {episode+1} 完成, 总奖励: {total_reward:.2f}, 步数: {steps}"
